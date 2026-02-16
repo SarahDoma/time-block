@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TimeBlock — Visual Day Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e27;
+      --surface: #141b3d;
+      --surface-light: #1c2647;
+      --border: #2a3456;
+      --text: #e4e7f1;
+      --text-dim: #8892b8;
+      --deep-work: #6366f1;
+      --meetings: #ec4899;
+      --break: #10b981;
+      --admin: #f59e0b;
+      --personal: #8b5cf6;
+      --accent: #3b82f6;
+    }
+
+    html, body {
+      width: 100%; min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--deep-work) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .date-display {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+      border-color: #2563eb;
+    }
+
+    /* Main Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 32px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    /* Categories */
+    .category {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: grab;
+      transition: all 0.2s;
+    }
+
+    .category:active {
+      cursor: grabbing;
+    }
+
+    .category:hover {
+      transform: translateX(4px);
+      border-color: var(--accent);
+    }
+
+    .category-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .category-name {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .category-duration {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 12px;
+      background: var(--surface-light);
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Calendar */
+    .calendar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 0;
+    }
+
+    .time-label {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      padding: 15px 8px;
+      text-align: right;
+      border-right: 1px solid var(--border);
+    }
+
+    .time-slot {
+      min-height: 60px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .time-slot:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .time-slot.half-hour {
+      border-bottom: 1px dashed rgba(42, 52, 86, 0.5);
+    }
+
+    /* Time blocks */
+    .block {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: move;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .block:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .block-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: white;
+    }
+
+    .block-time {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.7rem;
+      opacity: 0.8;
+      color: white;
+    }
+
+    .block-delete {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .block:hover .block-delete {
+      opacity: 1;
+    }
+
+    .block-delete:hover {
+      background: rgba(220, 38, 38, 0.8);
+    }
+
+    /* Empty state */
+    .empty-calendar {
+      text-align: center;
+      padding: 100px 40px;
+      color: var(--text-dim);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-text {
+      font-size: 1.1rem;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 14, 39, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <h1>TimeBlock</h1>
+      <span class="date-display" id="dateDisplay"></span>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="clearBtn">Clear Day</button>
+      <button class="btn btn-primary" id="saveTemplateBtn">Save Template</button>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Categories -->
+      <div class="panel">
+        <div class="panel-title">Block Types</div>
+        <div class="categories" id="categoriesList">
+          <!-- Default categories will be rendered by JS -->
+        </div>
+        <button class="btn" id="addCategoryBtn" style="width: 100%; margin-top: 12px;">+ New Block Type</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="panel">
+        <div class="panel-title">Today's Balance</div>
+        <div class="stats-grid">
+          <div class="stat">
+            <span class="stat-value" id="deepWorkHours">0h</span>
+            <span class="stat-label">Deep Work</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="meetingHours">0h</span>
+            <span class="stat-label">Meetings</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar">
+      <div class="time-grid" id="timeGrid">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Block Modal -->
+<div class="modal" id="blockModal">
+  <div class="modal-content">
+    <h2 class="modal-title">Add Time Block</h2>
+    <form id="blockForm">
+      <div class="form-group">
+        <label class="form-label">Block Name</label>
+        <input type="text" class="form-input" id="blockName" placeholder="e.g., Write proposal" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="blockCategory" required>
+          <!-- Options populated by JS -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Start Time</label>
+        <input type="time" class="form-input" id="blockStart" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duration (minutes)</label>
+        <input type="number" class="form-input" id="blockDuration" value="60" min="15" step="15" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Block</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal" id="categoryModal">
+  <div class="modal-content">
+    <h2 class="modal-title">Create Block Type</h2>
+    <form id="categoryForm">
+      <div class="form-group">
+        <label class="form-label">Type Name</label>
+        <input type="text" class="form-input" id="categoryName" placeholder="e.g., Exercise, Reading" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Default Duration (minutes)</label>
+        <input type="number" class="form-input" id="categoryDuration" value="60" min="15" step="15" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px;">
+          <div class="color-option" data-color="#6366f1" style="background: #6366f1; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#ec4899" style="background: #ec4899; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#10b981" style="background: #10b981; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#f59e0b" style="background: #f59e0b; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#06b6d4" style="background: #06b6d4; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#f43f5e" style="background: #f43f5e; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#14b8a6" style="background: #14b8a6; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#fb923c" style="background: #fb923c; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+          <div class="color-option" data-color="#a855f7" style="background: #a855f7; width: 100%; height: 40px; border-radius: 6px; cursor: pointer; border: 2px solid transparent;"></div>
+        </div>
+        <input type="hidden" id="categoryColor" value="#6366f1" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="cancelCategoryBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // State
+  let blocks = JSON.parse(localStorage.getItem('timeBlocks') || '[]');
+  let categories = JSON.parse(localStorage.getItem('blockCategories') || JSON.stringify([
+    { id: 'deep-work', name: 'Deep Work', color: '#6366f1', duration: 90 },
+    { id: 'meetings', name: 'Meeting', color: '#ec4899', duration: 30 },
+    { id: 'break', name: 'Break', color: '#10b981', duration: 15 },
+    { id: 'admin', name: 'Admin', color: '#f59e0b', duration: 30 },
+    { id: 'personal', name: 'Personal', color: '#8b5cf6', duration: 60 }
+  ]));
+  let draggedCategory = null;
+  let selectedColor = '#6366f1';
+
+  // Initialize
+  function init() {
+    renderCategories();
+    renderCalendar();
+    renderBlocks();
+    updateStats();
+    updateDate();
+    setupEventListeners();
+  }
+
+  function updateDate() {
+    const today = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US', options);
+  }
+
+  function renderCategories() {
+    const list = document.getElementById('categoriesList');
+    list.innerHTML = categories.map(cat => `
+      <div class="category" draggable="true" data-category="${cat.id}" data-duration="${cat.duration}">
+        <div class="category-color" style="background: ${cat.color}"></div>
+        <div class="category-name">${cat.name}</div>
+        <div class="category-duration">${cat.duration}m</div>
+      </div>
+    `).join('');
+
+    // Update select dropdown
+    const select = document.getElementById('blockCategory');
+    select.innerHTML = categories.map(cat => 
+      `<option value="${cat.id}">${cat.name}</option>`
+    ).join('');
+
+    // Re-attach drag listeners
+    document.querySelectorAll('.category').forEach(cat => {
+      cat.addEventListener('dragstart', (e) => {
+        const catData = categories.find(c => c.id === cat.dataset.category);
+        draggedCategory = {
+          category: cat.dataset.category,
+          duration: parseInt(cat.dataset.duration),
+          name: catData.name
+        };
+      });
+    });
+  }
+
+  function addCategory(name, color, duration) {
+    const id = name.toLowerCase().replace(/\s+/g, '-');
+    const category = { id, name, color, duration: parseInt(duration) };
+    categories.push(category);
+    saveCategories();
+    renderCategories();
+    closeCategoryModal();
+  }
+
+  function saveCategories() {
+    localStorage.setItem('blockCategories', JSON.stringify(categories));
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('timeGrid');
+    grid.innerHTML = '';
+
+    for (let hour = 6; hour <= 22; hour++) {
+      // Hour label
+      const label = document.createElement('div');
+      label.className = 'time-label';
+      label.textContent = `${hour % 12 || 12}${hour < 12 ? 'am' : 'pm'}`;
+      grid.appendChild(label);
+
+      // Hour slot
+      const slot = document.createElement('div');
+      slot.className = 'time-slot';
+      slot.dataset.time = `${hour}:00`;
+      grid.appendChild(slot);
+
+      // Half hour slot
+      const labelHalf = document.createElement('div');
+      labelHalf.className = 'time-label';
+      grid.appendChild(labelHalf);
+
+      const slotHalf = document.createElement('div');
+      slotHalf.className = 'time-slot half-hour';
+      slotHalf.dataset.time = `${hour}:30`;
+      grid.appendChild(slotHalf);
+    }
+
+    // Add click handlers
+    document.querySelectorAll('.time-slot').forEach(slot => {
+      slot.addEventListener('click', (e) => {
+        if (e.target === slot) {
+          openModal(slot.dataset.time);
+        }
+      });
+
+      // Drop handlers
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        slot.style.background = 'rgba(59, 130, 246, 0.1)';
+      });
+
+      slot.addEventListener('dragleave', () => {
+        slot.style.background = '';
+      });
+
+      slot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        slot.style.background = '';
+        if (draggedCategory) {
+          addBlock(
+            draggedCategory.name,
+            draggedCategory.category,
+            slot.dataset.time,
+            draggedCategory.duration
+          );
+          draggedCategory = null;
+        }
+      });
+    });
+  }
+
+  function renderBlocks() {
+    // Remove existing blocks
+    document.querySelectorAll('.block').forEach(b => b.remove());
+
+    blocks.forEach(block => {
+      createBlockElement(block);
+    });
+  }
+
+  function createBlockElement(block) {
+    const [startHour, startMin] = block.start.split(':').map(Number);
+    const startMinutes = (startHour - 6) * 60 + startMin;
+    const slots = document.querySelectorAll('.time-slot');
+    const firstSlot = slots[0];
+    
+    const blockEl = document.createElement('div');
+    blockEl.className = 'block';
+    blockEl.dataset.category = block.category;
+    blockEl.dataset.id = block.id;
+    blockEl.style.top = `${(startMinutes / 30) * 60}px`;
+    blockEl.style.height = `${(block.duration / 30) * 60}px`;
+    
+    // Get category color
+    const cat = categories.find(c => c.id === block.category);
+    const color = cat ? cat.color : '#6366f1';
+    blockEl.style.background = `linear-gradient(135deg, ${color} 0%, ${adjustBrightness(color, -20)} 100%)`;
+    blockEl.style.borderColor = color;
+    
+    const endHour = Math.floor((startHour * 60 + startMin + block.duration) / 60);
+    const endMin = (startHour * 60 + startMin + block.duration) % 60;
+    
+    blockEl.innerHTML = `
+      <div class="block-title">${block.name}</div>
+      <div class="block-time">${block.start} - ${endHour}:${endMin.toString().padStart(2, '0')}</div>
+      <button class="block-delete">×</button>
+    `;
+
+    blockEl.querySelector('.block-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteBlock(block.id);
+    });
+
+    firstSlot.parentElement.appendChild(blockEl);
+  }
+
+  function adjustBrightness(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255))
+      .toString(16).slice(1);
+  }
+
+  function openModal(time = null) {
+    const modal = document.getElementById('blockModal');
+    modal.classList.add('active');
+    if (time) {
+      document.getElementById('blockStart').value = time;
+    }
+    document.getElementById('blockName').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('blockModal').classList.remove('active');
+    document.getElementById('blockForm').reset();
+  }
+
+  function openCategoryModal() {
+    document.getElementById('categoryModal').classList.add('active');
+    selectedColor = '#6366f1';
+    document.querySelectorAll('.color-option').forEach(opt => {
+      opt.style.borderColor = opt.dataset.color === selectedColor ? '#fff' : 'transparent';
+    });
+    document.getElementById('categoryName').focus();
+  }
+
+  function closeCategoryModal() {
+    document.getElementById('categoryModal').classList.remove('active');
+    document.getElementById('categoryForm').reset();
+  }
+
+  function addBlock(name, category, start, duration) {
+    const block = {
+      id: Date.now(),
+      name,
+      category,
+      start,
+      duration: parseInt(duration)
+    };
+    blocks.push(block);
+    saveBlocks();
+    renderBlocks();
+    updateStats();
+    closeModal();
+  }
+
+  function deleteBlock(id) {
+    blocks = blocks.filter(b => b.id !== id);
+    saveBlocks();
+    renderBlocks();
+    updateStats();
+  }
+
+  function saveBlocks() {
+    localStorage.setItem('timeBlocks', JSON.stringify(blocks));
+  }
+
+  function updateStats() {
+    const deepWork = blocks.filter(b => b.category === 'deep-work').reduce((sum, b) => sum + b.duration, 0);
+    const meetings = blocks.filter(b => b.category === 'meetings').reduce((sum, b) => sum + b.duration, 0);
+    
+    document.getElementById('deepWorkHours').textContent = `${(deepWork / 60).toFixed(1)}h`;
+    document.getElementById('meetingHours').textContent = `${(meetings / 60).toFixed(1)}h`;
+  }
+
+  function setupEventListeners() {
+    // Form submit
+    document.getElementById('blockForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('blockName').value;
+      const category = document.getElementById('blockCategory').value;
+      const start = document.getElementById('blockStart').value;
+      const duration = document.getElementById('blockDuration').value;
+      addBlock(name, category, start, duration);
+    });
+
+    // Category form submit
+    document.getElementById('categoryForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('categoryName').value;
+      const color = document.getElementById('categoryColor').value;
+      const duration = document.getElementById('categoryDuration').value;
+      addCategory(name, color, duration);
+    });
+
+    // Color selection
+    document.querySelectorAll('.color-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        selectedColor = opt.dataset.color;
+        document.getElementById('categoryColor').value = selectedColor;
+        document.querySelectorAll('.color-option').forEach(o => {
+          o.style.borderColor = o.dataset.color === selectedColor ? '#fff' : 'transparent';
+        });
+      });
+    });
+
+    // Cancel buttons
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelCategoryBtn').addEventListener('click', closeCategoryModal);
+
+    // Close modals on outside click
+    document.getElementById('blockModal').addEventListener('click', (e) => {
+      if (e.target.id === 'blockModal') closeModal();
+    });
+    document.getElementById('categoryModal').addEventListener('click', (e) => {
+      if (e.target.id === 'categoryModal') closeCategoryModal();
+    });
+
+    // Add category button
+    document.getElementById('addCategoryBtn').addEventListener('click', openCategoryModal);
+
+    // Clear day
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('Clear all blocks for today?')) {
+        blocks = [];
+        saveBlocks();
+        renderBlocks();
+        updateStats();
+      }
+    });
+
+    // Save template
+    document.getElementById('saveTemplateBtn').addEventListener('click', () => {
+      if (blocks.length === 0) {
+        alert('Add some blocks first!');
+        return;
+      }
+      localStorage.setItem('dayTemplate', JSON.stringify(blocks));
+      alert('Template saved! Your current schedule is now your default template.');
+    });
+  }
+
+  // Initialize
+  init();
+</script>
+
+</body>
+</html>
